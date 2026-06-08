@@ -1,0 +1,2 @@
+"test","hypothesis","mean_water_pct","sd_water_pct","t_statistic","df","p_value","ci_lower_pct","ci_upper_pct"
+"One-sample two-sided t-test","Mean water attribution != 0",30.5,26.39,14.06,147,5.413e-29,26.21,34.79

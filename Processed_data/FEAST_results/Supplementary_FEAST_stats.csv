@@ -1,0 +1,8 @@
+"Model","Term","Chisq","Df","Pr(>Chisq)"
+"Concurrent (no substrate)","(Intercept)",3.474,1,0.0623
+"Concurrent (no substrate)","sink_season",2.247,4,0.6905
+"Concurrent (no substrate)","site",0.202,1,0.6529
+"Per substrate","(Intercept)",1.763,1,0.1843
+"Per substrate","substrate",2.991,4,0.5594
+"Per substrate","sink_season",1.754,4,0.7809
+"Per substrate","site",0.663,1,0.4156

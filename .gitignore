@@ -1,0 +1,18 @@
+# R files
+*.RData
+*.Rhistory
+*.Rproj.user
+*.Ruserdata
+*.RDS
+*.rds
+
+# Outputs
+*.zip
+*.docx
+
+
+# Large data files
+Raw_data/TaxonomyAssignements/blast_lca/
+.Rproj.user
+
+
