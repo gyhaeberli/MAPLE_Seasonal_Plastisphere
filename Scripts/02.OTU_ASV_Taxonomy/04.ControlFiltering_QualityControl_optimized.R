@@ -92,10 +92,6 @@ dir_read_tracking       <- file.path(dir_sanity, "Read_tracking")
 path_filter_summary_csv <- file.path(dir_read_tracking, "filter_summary_ALL_METHODS.csv")
 path_filter_tracking    <- file.path(dir_read_tracking, "filter_tracking_object.rds")
 
-# ---- Output: replicate similarity ----
-dir_rep_sim             <- file.path(dir_sanity, "replicate_similarity")
-path_rep_check_A        <- file.path(dir_rep_sim, "rep_checkPoint_A.rds")
-path_rep_check_B        <- file.path(dir_rep_sim, "rep_checkPoint_B.rds")
 
 # ---- Output: workspace image ----
 path_rdata              <- "OTU_filtering_v2.RData"   # relative to working directory
