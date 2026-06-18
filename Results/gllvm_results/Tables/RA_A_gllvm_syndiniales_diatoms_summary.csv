@@ -1,0 +1,51 @@
+"season","substrate","taxon_group","n","mean_ra","sd_ra","med_ra"
+"Winter","Glass","Bacillariophyceae / Mediophyceae",24,64.225,30.392,72.659
+"Winter","Glass","Syndiniales",24,0.457,0.991,0.182
+"Winter","PE","Bacillariophyceae / Mediophyceae",23,82.302,11.984,85.227
+"Winter","PE","Syndiniales",23,0.313,0.142,0.352
+"Winter","Weathered_PE","Bacillariophyceae / Mediophyceae",21,79.609,25.06,86.902
+"Winter","Weathered_PE","Syndiniales",21,0.285,0.253,0.226
+"Winter","PET","Bacillariophyceae / Mediophyceae",21,84.999,12.839,85.975
+"Winter","PET","Syndiniales",21,0.41,0.556,0.185
+"Winter","Weathered_PET","Bacillariophyceae / Mediophyceae",24,80.141,9.93,82.193
+"Winter","Weathered_PET","Syndiniales",24,0.287,0.206,0.182
+"Spring","Glass","Bacillariophyceae / Mediophyceae",23,14.375,9.527,12.362
+"Spring","Glass","Syndiniales",23,0.018,0.018,0.013
+"Spring","PE","Bacillariophyceae / Mediophyceae",23,21.866,12.149,14.735
+"Spring","PE","Syndiniales",23,0.016,0.013,0.018
+"Spring","Weathered_PE","Bacillariophyceae / Mediophyceae",22,10.139,6.513,9.072
+"Spring","Weathered_PE","Syndiniales",22,0.014,0.011,0.014
+"Spring","PET","Bacillariophyceae / Mediophyceae",23,10.863,2.691,10.331
+"Spring","PET","Syndiniales",23,0.025,0.019,0.023
+"Spring","Weathered_PET","Bacillariophyceae / Mediophyceae",23,15.122,9.179,13.74
+"Spring","Weathered_PET","Syndiniales",23,0.017,0.015,0.012
+"Summer","Glass","Bacillariophyceae / Mediophyceae",24,2.355,2.047,1.196
+"Summer","Glass","Syndiniales",24,0.066,0.096,0.023
+"Summer","PE","Bacillariophyceae / Mediophyceae",22,2.582,2.131,3.132
+"Summer","PE","Syndiniales",22,0.025,0.034,0.013
+"Summer","Weathered_PE","Bacillariophyceae / Mediophyceae",24,1.665,2.118,0.426
+"Summer","Weathered_PE","Syndiniales",24,0.016,0.01,0.016
+"Summer","PET","Bacillariophyceae / Mediophyceae",22,0.815,0.866,0.443
+"Summer","PET","Syndiniales",22,0.016,0.012,0.015
+"Summer","Weathered_PET","Bacillariophyceae / Mediophyceae",24,0.92,1.2,0.343
+"Summer","Weathered_PET","Syndiniales",24,0.016,0.011,0.013
+"Fall","Glass","Bacillariophyceae / Mediophyceae",24,1.502,2.755,0.141
+"Fall","Glass","Syndiniales",24,2.787,3.674,1.979
+"Fall","PE","Bacillariophyceae / Mediophyceae",23,3.293,6.664,0
+"Fall","PE","Syndiniales",23,7.2,12.775,1.387
+"Fall","Weathered_PE","Bacillariophyceae / Mediophyceae",24,5.212,4.663,3.737
+"Fall","Weathered_PE","Syndiniales",24,5.89,6.084,3.031
+"Fall","PET","Bacillariophyceae / Mediophyceae",23,2.638,3.695,0.718
+"Fall","PET","Syndiniales",23,5.705,6.201,3.011
+"Fall","Weathered_PET","Bacillariophyceae / Mediophyceae",24,2.173,3.06,0.28
+"Fall","Weathered_PET","Syndiniales",24,6.083,6.93,1.932
+"Winter2","Glass","Bacillariophyceae / Mediophyceae",20,12.726,13.956,7.099
+"Winter2","Glass","Syndiniales",20,0.431,0.569,0.173
+"Winter2","PE","Bacillariophyceae / Mediophyceae",14,19.823,9.813,20.501
+"Winter2","PE","Syndiniales",14,0.287,0.329,0.222
+"Winter2","Weathered_PE","Bacillariophyceae / Mediophyceae",19,28.731,26.71,13.024
+"Winter2","Weathered_PE","Syndiniales",19,0.266,0.36,0
+"Winter2","PET","Bacillariophyceae / Mediophyceae",20,35.159,15.976,30.21
+"Winter2","PET","Syndiniales",20,0.714,0.406,0.712
+"Winter2","Weathered_PET","Bacillariophyceae / Mediophyceae",22,39.277,13.105,34.923
+"Winter2","Weathered_PET","Syndiniales",22,1.025,0.958,0.687

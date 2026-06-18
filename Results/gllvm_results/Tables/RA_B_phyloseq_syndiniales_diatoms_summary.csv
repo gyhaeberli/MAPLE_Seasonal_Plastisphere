@@ -1,0 +1,21 @@
+"season","sample_type","taxon_group","n","mean_ra","sd_ra","med_ra","max_ra"
+"Winter","Water","Bacillariophyceae / Mediophyceae",12,5.276,2.058,5.24,8.389
+"Winter","Water","Syndiniales",12,4.909,1.699,4.49,7.735
+"Winter","Biofilm","Bacillariophyceae / Mediophyceae",30,72.215,21.386,74.46,95.95
+"Winter","Biofilm","Syndiniales",30,0.509,0.678,0.327,3.559
+"Spring","Water","Bacillariophyceae / Mediophyceae",12,12.615,10.6,8.706,30.495
+"Spring","Water","Syndiniales",12,0.85,0.283,0.82,1.413
+"Spring","Biofilm","Bacillariophyceae / Mediophyceae",30,14.1,9.048,12.325,36.976
+"Spring","Biofilm","Syndiniales",30,0.039,0.025,0.032,0.093
+"Summer","Water","Bacillariophyceae / Mediophyceae",12,4.213,3.957,3.263,10.535
+"Summer","Water","Syndiniales",12,3.058,1.709,2.482,7.384
+"Summer","Biofilm","Bacillariophyceae / Mediophyceae",30,1.633,1.763,1.031,5.572
+"Summer","Biofilm","Syndiniales",30,0.026,0.028,0.017,0.126
+"Fall","Water","Bacillariophyceae / Mediophyceae",11,1.477,0.771,1.173,2.705
+"Fall","Water","Syndiniales",11,8.452,1.748,8.739,11.565
+"Fall","Biofilm","Bacillariophyceae / Mediophyceae",30,2.54,2.96,0.87,8.918
+"Fall","Biofilm","Syndiniales",30,5.67,6.215,3.254,27.652
+"Winter2","Water","Bacillariophyceae / Mediophyceae",12,3.297,2.769,3.193,6.273
+"Winter2","Water","Syndiniales",12,6.567,2.68,6.849,9.94
+"Winter2","Biofilm","Bacillariophyceae / Mediophyceae",28,24.059,17.384,23.457,64.797
+"Winter2","Biofilm","Syndiniales",28,1.007,1.176,0.902,4.971

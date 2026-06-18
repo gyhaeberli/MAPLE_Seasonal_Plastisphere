@@ -2307,15 +2307,287 @@ cat("Syndiniales–diatom table saved to Word.\n\n")
 
 cat("=== SECTION 3-D COMPLETE ===\n\n")
 
+# ==============================================================================
+# 3-D SUPPLEMENT: RELATIVE ABUNDANCE & FOO — SYNDINIALES vs BACILLARIOPHYCEAE
+# Full dataset (ps_combined), Version A (denominator = all reads in sample)
+#
+# FIGURE 1 — Boxplot: RA distribution, Water vs Biofilm, jittered dots
+# FIGURE 2 — Seasonal barplot: mean RA, facet grid taxon × sample_type
+# FIGURE 3 — Substrate barplot: mean RA across substrate types
+# ==============================================================================
+
+library(phyloseq)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tibble)
+
+# ── Load data ──────────────────────────────────────────────────────────────────
+PS_DIR <- "~/Github/MAPLE_Seasonal_Plastisphere/Processed_data/phyloseq_objects"
+ps_combined <- readRDS(file.path(PS_DIR, "ps_st_wf_allST_combined.rds"))
+
+sample_data(ps_combined)$sample_type <- factor(
+  sample_data(ps_combined)$sample_type,
+  levels = c("Water", "Biofilm")
+)
+sample_data(ps_combined)$season <- factor(
+  sample_data(ps_combined)$season,
+  levels = c("Winter", "Spring", "Summer", "Fall", "Winter2")
+)
+sample_data(ps_combined)$substrate <- factor(
+  sample_data(ps_combined)$substrate,
+  levels = c("Filter", "Glass", "PE", "Weathered_PE", "PET", "Weathered_PET")
+)
+
+ps_raw               <- ps_combined
+ps_synd_raw          <- subset_taxa(ps_raw, Class == "Syndiniales")
+ps_bacill_raw        <- subset_taxa(ps_raw, Class == "Bacillariophyceae")
+
+cat("Syndiniales ASVs:        ", ntaxa(ps_synd_raw),   "\n")
+cat("Bacillariophyceae ASVs:  ", ntaxa(ps_bacill_raw), "\n\n")
+
+# ── Colour palettes ────────────────────────────────────────────────────────────
+# Using consistent label "Bacillariophyceae" everywhere — no trailing s
+
+LABEL_SYND   <- "Syndiniales"
+LABEL_BACILL <- "Bacillariophyceae"
+taxon_levels <- c(LABEL_SYND, LABEL_BACILL)
+
+taxon_cols <- c(
+  "Syndiniales"       = "#7B2D8B",
+  "Bacillariophyceae" = "#2E8B57"
+)
+taxon_fill <- c(
+  "Syndiniales"       = adjustcolor("#7B2D8B", alpha.f = 0.45),
+  "Bacillariophyceae" = adjustcolor("#2E8B57", alpha.f = 0.45)
+)
+
+substrate_levels <- c("Filter", "Glass", "PE", "Weathered_PE", "PET", "Weathered_PET")
+season_levels    <- c("Winter", "Spring", "Summer", "Fall", "Winter2")
+
+# ── Helper: per-sample RA (Version A — denominator = all reads) ────────────────
+extract_ra <- function(ps_subset, ps_total, group_label) {
+  
+  num_mat <- as(otu_table(ps_subset), "matrix")
+  if (taxa_are_rows(ps_subset)) num_mat <- t(num_mat)
+  
+  den_mat <- as(otu_table(ps_total), "matrix")
+  if (taxa_are_rows(ps_total)) den_mat <- t(den_mat)
+  
+  total_reads <- rowSums(den_mat)
+  group_reads <- rowSums(num_mat)
+  ra_pct      <- ifelse(total_reads > 0, group_reads / total_reads * 100, NA_real_)
+  
+  meta <- data.frame(sample_data(ps_subset), stringsAsFactors = FALSE)
+  
+  data.frame(
+    sample_id   = rownames(meta),
+    ra_pct      = ra_pct,
+    sample_type = meta$sample_type,
+    season      = meta$season,
+    substrate   = meta$substrate,
+    taxon_group = group_label,
+    stringsAsFactors = FALSE
+  )
+}
+
+# ── Build per-sample RA data frame ─────────────────────────────────────────────
+ra_all <- bind_rows(
+  extract_ra(ps_synd_raw,   ps_raw, LABEL_SYND),
+  extract_ra(ps_bacill_raw, ps_raw, LABEL_BACILL)
+) %>%
+  mutate(
+    sample_type = factor(sample_type, levels = c("Water", "Biofilm")),
+    season      = factor(season,      levels = season_levels),
+    substrate   = factor(substrate,   levels = substrate_levels),
+    taxon_group = factor(taxon_group, levels = taxon_levels)
+  )
+
+cat("Total per-sample observations:", nrow(ra_all), "\n\n")
+
+# ==============================================================================
+# FIGURE 1: BOXPLOT — overall RA distribution, Water vs Biofilm
+# ==============================================================================
+
+p_box <- ggplot(
+  ra_all %>% filter(!is.na(ra_pct)),
+  aes(x      = taxon_group,
+      y      = ra_pct,
+      fill   = taxon_group,
+      colour = taxon_group)
+) +
+  geom_boxplot(
+    outlier.shape = NA,
+    alpha  = 0.45,
+    width  = 0.5,
+    colour = "grey30"
+  ) +
+  geom_jitter(
+    width = 0.18,
+    size  = 1.0,
+    alpha = 0.40
+  ) +
+  facet_wrap(~ sample_type, ncol = 2) +
+  scale_fill_manual(values   = taxon_fill, guide = "none") +
+  scale_colour_manual(values = taxon_cols, guide = "none") +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  labs(
+    x = NULL,
+    y = "Relative abundance"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    strip.text.x       = element_text(size = 12, face = "bold"),
+    strip.background   = element_rect(fill = "grey92", colour = NA),
+    axis.title.y       = element_text(size = 13, face = "bold"),
+    axis.text.x        = element_text(size = 12, face = "bold.italic"),
+    axis.text.y        = element_text(size = 12, face = "bold"),
+    axis.line          = element_line(linewidth = 0.7, colour = "black"),
+    panel.grid.major.y = element_line(colour = "grey90", linewidth = 0.4),
+    plot.margin        = margin(5, 10, 5, 5)
+  )
+
+print(p_box)
+ggsave(
+  file.path(FIG_DIR, "S3D_ra_boxplot.png"),
+  p_box, width = 8, height = 5, dpi = 200
+)
+cat("Figure 1 saved: S3D_ra_boxplot.png\n\n")
 
 
+# ==============================================================================
+# FIGURE 2: SEASONAL BARPLOT — mean RA, facet grid taxon × sample_type
+# ==============================================================================
+
+season_summary <- ra_all %>%
+  filter(!is.na(ra_pct), !is.na(season)) %>%
+  group_by(taxon_group, season, sample_type) %>%
+  summarise(
+    mean_ra   = mean(ra_pct, na.rm = TRUE),
+    se_ra     = sd(ra_pct,   na.rm = TRUE) / sqrt(n()),
+    n_samples = n(),
+    .groups   = "drop"
+  )
+
+cat("Seasonal RA summary:\n")
+print(season_summary, n = Inf)
+cat("\n")
+
+p_ra_season <- ggplot(
+  season_summary,
+  aes(x = season, y = mean_ra, fill = taxon_group)
+) +
+  geom_col(
+    position = position_dodge(width = 0.75),
+    width    = 0.65,
+    alpha    = 0.85
+  ) +
+  geom_errorbar(
+    aes(ymin = pmax(mean_ra - se_ra, 0),
+        ymax = mean_ra + se_ra),
+    position  = position_dodge(width = 0.75),
+    width     = 0.25,
+    colour    = "grey30",
+    linewidth = 0.5
+  ) +
+  facet_grid(taxon_group ~ sample_type, scales = "free_y") +
+  scale_fill_manual(values = taxon_cols, name = NULL) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  labs(
+    x = NULL,
+    y = "Mean relative abundance"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    strip.text.x       = element_text(size = 12, face = "bold"),
+    strip.text.y       = element_text(size = 11, face = "bold.italic"),
+    strip.background   = element_rect(fill = "grey92", colour = NA),
+    axis.title.y       = element_text(size = 13, face = "bold"),
+    axis.text.x        = element_text(angle = 30, hjust = 1,
+                                      size = 11, face = "bold"),
+    axis.text.y        = element_text(size = 11, face = "bold"),
+    axis.line          = element_line(linewidth = 0.7, colour = "black"),
+    panel.grid.major.y = element_line(colour = "grey90", linewidth = 0.4),
+    legend.position    = "none",
+    plot.margin        = margin(5, 10, 5, 5)
+  )
+
+print(p_ra_season)
+ggsave(
+  file.path(FIG_DIR, "S3D_ra_seasonal_bar.png"),
+  p_ra_season, width = 9, height = 7, dpi = 200
+)
+cat("Figure 2 saved: S3D_ra_seasonal_bar.png\n\n")
 
 
+# ==============================================================================
+# FIGURE 3: SUBSTRATE BARPLOT — mean RA across substrate types
+# Filter = seawater, all others = biofilm substrates
+# No sample_type facet — substrate already encodes habitat
+# ==============================================================================
 
+substrate_summary <- ra_all %>%
+  filter(!is.na(ra_pct), !is.na(substrate)) %>%
+  group_by(taxon_group, substrate) %>%
+  summarise(
+    mean_ra   = mean(ra_pct, na.rm = TRUE),
+    se_ra     = sd(ra_pct,   na.rm = TRUE) / sqrt(n()),
+    n_samples = n(),
+    .groups   = "drop"
+  )
 
+cat("Substrate RA summary:\n")
+print(substrate_summary, n = Inf)
+cat("\n")
 
+p_ra_sub <- ggplot(
+  substrate_summary,
+  aes(x = substrate, y = mean_ra, fill = taxon_group)
+) +
+  geom_col(
+    position = position_dodge(width = 0.75),
+    width    = 0.65,
+    alpha    = 0.85
+  ) +
+  geom_errorbar(
+    aes(ymin = pmax(mean_ra - se_ra, 0),
+        ymax = mean_ra + se_ra),
+    position  = position_dodge(width = 0.75),
+    width     = 0.25,
+    colour    = "grey30",
+    linewidth = 0.5
+  ) +
+  scale_fill_manual(values = taxon_cols, name = NULL) +
+  scale_x_discrete(labels = c(
+    "Filter"        = "Seawater",
+    "Glass"         = "Glass",
+    "PE"            = "PE",
+    "Weathered_PE"  = "Weathered\nPE",
+    "PET"           = "PET",
+    "Weathered_PET" = "Weathered\nPET"
+  ))+
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  labs(
+    x = NULL,
+    y = "Mean relative abundance"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    axis.title.y       = element_text(size = 13, face = "bold"),
+    axis.text.x        = element_text(size = 12, face = "bold"),
+    axis.text.y        = element_text(size = 12, face = "bold"),
+    axis.line          = element_line(linewidth = 0.7, colour = "black"),
+    panel.grid.major.y = element_line(colour = "grey90", linewidth = 0.4),
+    legend.position    = "bottom",
+    legend.text        = element_text(size = 12, face = "bold.italic"),
+    plot.margin        = margin(5, 10, 5, 5)
+  )
 
+print(p_ra_sub)
+ggsave(
+  file.path(FIG_DIR, "S3D_ra_substrate_bar.png"),
+  p_ra_sub, width = 8, height = 5, dpi = 200
+)
+cat("Figure 3 saved: S3D_ra_substrate_bar.png\n\n")
 
-
-
-
+cat("=== RELATIVE ABUNDANCE SUPPLEMENT COMPLETE ===\n\n")

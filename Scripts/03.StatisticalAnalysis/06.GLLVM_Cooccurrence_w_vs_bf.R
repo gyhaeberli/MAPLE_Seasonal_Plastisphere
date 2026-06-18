@@ -49,10 +49,10 @@ SAVE_DIR_BASE <- "~/Github/MAPLE_Seasonal_Plastisphere/Processed_data/gllvm_mode
 R_STRONG <- 0.5
 
 # Circos drawing constants (identical in both original scripts)
-CANVAS_SIZE  <- 12      # inches
+CANVAS_SIZE  <- 22     # inches
 PLOT_DPI     <- 300
 GAP_DEGREES  <- 7       # gap between sectors, in degrees
-LABEL_CEX    <- 1.5     # sector label font size
+LABEL_CEX    <- 3.5     # sector label font size
 LABEL_OFFSET <- 0.1    # how far labels sit outside the track
 
 
@@ -647,7 +647,7 @@ circos_by_association <- function(cfg, pair_df, links = prepare_circos_links(cfg
   d <- track_dirs(cfg)
   
   # Give more canvas room for water (longer/more class names)
-  canvas_lim <- if (cfg$file_tag == "water") 1.9 else 1.6
+  canvas_lim <- if (cfg$file_tag == "water") 1.6 else 1.6
   
   png(file.path(d$fig, paste0("circos_by_association_", cfg$file_tag, ".png")),
       width = CANVAS_SIZE, height = CANVAS_SIZE, units = "in", res = PLOT_DPI)
@@ -664,10 +664,10 @@ circos_by_association <- function(cfg, pair_df, links = prepare_circos_links(cfg
     col                   = ifelse(links$class_links$association == "positive",
                                    links$link_col_positive, links$link_col_negative),
     transparency          = 0, directional = 0,
-    annotationTrack       = "grid", annotationTrackHeight = 0.04,
+    annotationTrack       = "grid", annotationTrackHeight = 0.06,
     link.border           = NA, order = links$all_classes,
     link.sort             = TRUE, link.decreasing = TRUE,
-    preAllocateTracks     = list(track.height = 0.08)
+    preAllocateTracks     = list(track.height = 0.012)
   )
   draw_label_track()
   par(xpd = TRUE)
@@ -903,7 +903,7 @@ circos_by_quadrant(cfg_w, pair_df_w, links_w)
 # ==============================================================================
 
 plot_synd_diatom_triangle <- function(cfg, pair_df, loaded, links,
-                                      lab_size = 9,
+                                      lab_size = 15,
                                       show_labels = NA,
                                       strong_only = FALSE) {
   
@@ -1049,7 +1049,7 @@ plot_synd_diatom_triangle <- function(cfg, pair_df, loaded, links,
       aes(x = p, y = p, label = S_labels),
       colour = "black",
       size = lab_size * 0.5,
-      fontface = "bold",
+      #fontface = "bold",
       hjust = 0,
       nudge_x = 0.7
     ) +
@@ -1103,7 +1103,7 @@ plot_synd_diatom_triangle <- function(cfg, pair_df, loaded, links,
   
   print(p_tri)
   
-  side <- max(8, length(S) * 0.22 + 4)
+  side <- max(8, length(S) * 0.3 + 4)
   
   ggsave(file.path(d$fig,
                    paste0("synd_diatom_triangle_", cfg$file_tag, ".png")),

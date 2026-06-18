@@ -1,0 +1,7 @@
+"taxon_group","group","n_asvs_total","n_asvs_detected","pct_asvs_detected","mean_foo","median_foo"
+"Syndiniales","Water",394,389,98.7,31.8,27.1
+"Syndiniales","Biofilm",394,127,32.2,8.3,2.7
+"Diatom
+(Bacillariophyceae / Mediophyceae)","Water",302,211,69.9,19.2,11.9
+"Diatom
+(Bacillariophyceae / Mediophyceae)","Biofilm",302,270,89.4,21.1,16.9
