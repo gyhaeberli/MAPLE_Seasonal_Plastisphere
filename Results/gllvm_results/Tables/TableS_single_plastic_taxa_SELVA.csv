@@ -1,0 +1,15 @@
+Taxon,Class,Substrate,Season,Estimate,SE,p_BH,Prevalence
+Annelida_XX_ASV_18258,Annelida,wPET,Fal,7.532,0.246,2.54e-203,2/3 vs 0/3
+Bacillariophyceae_ASV_6651,Bacillariophyceae,wPE,Fal,10.464,0.843,3.25e-33,2/3 vs 0/3
+Enoplea_X_ASV_18404,Nematoda,wPE,Sum,9.395,0.35,3.78e-156,1/3 vs 0/3
+Zoothamnium_1 sp. Zoothamnium_1_ASV_32734,Oligohymenophorea,PE,Fal,7.722,1.013,2.08e-12,1/3 vs 0/3
+Heribaudiella_fluviatilis,Phaeophyceae,wPET,Sum,6.103,0.598,1.86e-22,1/3 vs 0/3
+Phaeophyceae_XX_ASV_8499,Phaeophyceae,wPE,Fal,6.197,0.536,8.75e-29,1/3 vs 0/3
+Ephelota sp. Ephelota_ASV_661,Phyllopharyngea,wPET,Win,6.516,0.392,1.08e-59,1/3 vs 0/3
+Ephelota_truncata,Phyllopharyngea,PET,Spr,7.554,0.568,4.49e-38,1/3 vs 0/3
+Suctoria_XX_sp.,Phyllopharyngea,PET,Win2,7.168,0.352,2.3e-89,2/3 vs 0/3
+Adineta_vaga,Rotifera,wPE,Spr,7.752,0.619,8.03e-34,1/3 vs 0/3
+Spirotrichea_ASV_29935,Spirotrichea,wPET,Fal,5.567,0.255,3.49e-103,1/3 vs 0/3
+Dino-Group-I-Clade-1_X_sp.,Syndiniales,wPET,Sum,10.096,0.675,3.52e-48,1/3 vs 0/3
+OTU_ASV_16598,Unassigned,PET,Fal,10.625,0.366,6.81e-182,2/3 vs 0/3
+OTU_ASV_5396,Unassigned,wPET,Win,5.979,0.849,1.55e-10,1/3 vs 0/3
