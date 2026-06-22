@@ -1,0 +1,11 @@
+"Site","Component","Variance_explained_pct"
+"SELVA","seasonSpring/seasonSummer/seasonFall/seasonWinter2",44.1
+"SELVA","seasonWinter:substratePE/seasonSpring:substratePE/seasonSummer:substratePE/seasonFall:substratePE/seasonWinter2:substratePE/seasonWinter:substrateWeathered_PE/seasonSpring:substrateWeathered_PE/seasonSummer:substrateWeathered_PE/seasonFall:substrateWeathered_PE/seasonWinter2:substrateWeathered_PE/seasonWinter:substratePET/seasonSpring:substratePET/seasonSummer:substratePET/seasonFall:substratePET/seasonWinter2:substratePET/seasonWinter:substrateWeathered_PET/seasonSpring:substrateWeathered_PET/seasonSummer:substrateWeathered_PET/seasonFall:substrateWeathered_PET/seasonWinter2:substrateWeathered_PET",43.8
+"SELVA","LV1",6.1
+"SELVA","LV2",1.6
+"SELVA","Row random effect: clean_sample_names",4.5
+"TBS","seasonSpring/seasonSummer/seasonFall/seasonWinter2",62.5
+"TBS","seasonWinter:substratePE/seasonSpring:substratePE/seasonSummer:substratePE/seasonFall:substratePE/seasonWinter2:substratePE/seasonWinter:substrateWeathered_PE/seasonSpring:substrateWeathered_PE/seasonSummer:substrateWeathered_PE/seasonFall:substrateWeathered_PE/seasonWinter2:substrateWeathered_PE/seasonWinter:substratePET/seasonSpring:substratePET/seasonSummer:substratePET/seasonFall:substratePET/seasonWinter2:substratePET/seasonWinter:substrateWeathered_PET/seasonSpring:substrateWeathered_PET/seasonSummer:substrateWeathered_PET/seasonFall:substrateWeathered_PET/seasonWinter2:substrateWeathered_PET",30.3
+"TBS","LV1",4.1
+"TBS","LV2",0
+"TBS","Row random effect: clean_sample_names",3.1
