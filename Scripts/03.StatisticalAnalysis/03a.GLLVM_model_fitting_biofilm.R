@@ -36,6 +36,7 @@ setwd("~/GitHub/MAPLE_Seasonal_Plastisphere/Scripts/03.StatisticalAnalysis")
 
 
 SAVE_DIR_BASE  <- "~/Github/MAPLE_Seasonal_Plastisphere/Processed_data/gllvm_models"
+OUT_DIR <- "~/Github/MAPLE_Seasonal_Plastisphere/Results/gllvm_results"
 
 # ==============================================================================
 # HARDCODED PARAMETERS
@@ -314,6 +315,8 @@ fit_final <- gllvm(
 
 saveRDS(fit_final, file.path(SAVE_DIR_BASE, "GLLVM_final_incM2.rds"))
 
+fit_final <- readRDS(file.path(SAVE_DIR_BASE, "GLLVM_final_incM2.rds"))
+
 cat("\n--- Best model fitted successfully ---\n")
 cat("  AIC:    ", round(AIC(fit_final), 1), "\n")
 cat("  BIC:    ", round(BIC(fit_final), 1), "\n")
@@ -347,6 +350,8 @@ fit_null <- gllvm(
 
 saveRDS(fit_null, file.path(SAVE_DIR_BASE, "GLLVM_null_incM7.rds"))
 
+fit_null  <- readRDS(file.path(SAVE_DIR_BASE, "GLLVM_null_incM7.rds"))
+
 cat("\n--- Null model fitted successfully ---\n")
 cat("  AIC:    ", round(AIC(fit_null), 1), "\n")
 cat("  BIC:    ", round(BIC(fit_null), 1), "\n")
@@ -366,6 +371,80 @@ cat("  LV variance — null:", round(lv_null, 3),
 #save.image("gllvm_final_fit.RData")
 
 #load("gllvm_final_fit.RData")
+
+
+
+
+# ==============================================================================
+#  DOES SITE, SEASON AND SUBSTRATE STRUCTURE THE COMMUNITY?
+# ==============================================================================
+
+cat("=== Q1: Community structuring — variance partitioning ===\n\n")
+
+
+### FROM GLLVM PACKAGE
+
+vp_gllvm = VP(fit_final)
+vp_gllvm
+
+
+
+#TABLE
+# ── Build VP table ────────────────────────────────────────────────────────────
+vp_values <- colMeans(vp_gllvm$PropExplainedVarSp) * 100
+
+vp_display <- data.frame(
+  Component = c(
+    "Site",
+    "Season",
+    "Substrate",
+    "Site × Season",
+    "Site × Substrate",
+    "Season × Substrate",
+    "Latent variable 1",
+    "Latent variable 2",
+    "Sample random effect"
+  ),
+  Type = c(
+    "Main effect",
+    "Main effect",
+    "Main effect",
+    "Interaction",
+    "Interaction",
+    "Interaction",
+    "Residual",
+    "Residual",
+    "Residual"
+  ),
+  Variance_explained = round(as.numeric(vp_values), 1),
+  stringsAsFactors = FALSE
+)
+
+colnames(vp_display) <- c("Component", "Type", "Variance explained (%)")
+
+# ── Render ────────────────────────────────────────────────────────────────────
+kbl(vp_display,
+    booktabs = TRUE,
+    align    = c("l", "l", "r"),
+    na       = "") %>%
+  kable_classic(full_width = FALSE, html_font = "Arial") %>%
+  pack_rows("Main effects", 1, 3) %>%
+  pack_rows("Interactions", 4, 6) %>%
+  pack_rows("Residual", 7, 9) %>%
+  row_spec(7:9, italic = TRUE, color = "gray") 
+#row_spec(4:6, bold = TRUE) %>%
+
+
+
+ft <- flextable(vp_display) %>%
+  autofit()
+
+read_docx() %>%
+  body_add_flextable(ft) %>%
+  print(target = file.path(OUT_DIR, "Tables/vp_gllvm.docx"))
+
+print(doc, target = "vp_gllvm.docx")
+
 
 
 

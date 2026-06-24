@@ -2569,7 +2569,7 @@ p_ra_sub <- ggplot(
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   labs(
     x = NULL,
-    y = "Mean relative abundance"
+    y = "Mean relative read abundance"
   ) +
   theme_classic(base_size = 14) +
   theme(
