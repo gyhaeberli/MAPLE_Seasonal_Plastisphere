@@ -13,11 +13,10 @@ Gabrielle Haeberli (1), Nicole Aberle (1,2), Glenn Dunshea (3)
 
 Clone this repository.
 
-Download the raw data files from Zenodo (????).
+Download the trimmed and demultiplexed files from the European Nucleotide Archive (ENA). Accession: xxxxxxxx
 
-Transfer the folders from the unzipped Zenodo archive ZIP files into the cloned repository.
-
-Open scripts in order and run them sequencially. Paths and directories can be modified at the top of each script.
+Open scripts in order and run them sequencially (from scripts 02.OTU_ASV_Taxonomy/01.DADA2_EUK.R)
+Paths and directories can be modified at the top of each script.
 
 The scripts will reproduce all analyses and figures presented in this study.
 
