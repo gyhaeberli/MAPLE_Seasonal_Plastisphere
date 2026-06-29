@@ -365,6 +365,11 @@ ggsave(
   width    = 14, height = 7, dpi = 300
 )
 
+ggsave(
+  filename = paste0(fig_dir, "1.spider_facet_site_color_season_shape_substrate_", dataset_name, ".pdf"),
+  plot     = p_spider2,
+  width    = 14, height = 7
+)
 
 # ==============================================================================
 # STEP 9: PREPARE METADATA FOR PERMANOVA
