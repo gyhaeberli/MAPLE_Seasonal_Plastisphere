@@ -283,6 +283,201 @@ length(unique(na.omit(tax_table(ps_wf_collap)[, "Division"])))
 (table(tax_table(ps_wf_collap)[, "Division"], useNA = "always")/ntaxa(ps_wf_collap)) *100
 
 
+# ==============================================================================
+# PART 0.5 (cont.): PREVALENCE & ABUNDANCE OF UNASSIGNED (Division = NA) ASVs
+# ==============================================================================
+# Goal: check whether unassigned-Division ASVs are rare/low-abundance (usually
+# fine to leave as-is) or common/high-abundance (worth a closer look)
+# ==============================================================================
+
+# --- Helper function: build a per-ASV summary table for a given phyloseq object ---
+get_unassigned_summary <- function(ps, sample_type_label) {
+  
+  # Identify ASVs unassigned at Division level
+  na_taxa <- rownames(tax_table(ps))[is.na(tax_table(ps)[, "Division"])]
+  
+  if (length(na_taxa) == 0) {
+    cat("No unassigned-Division ASVs found in", sample_type_label, "\n")
+    return(NULL)
+  }
+  
+  # Extract OTU table as a matrix, taxa as rows
+  otu_mat <- as(otu_table(ps), "matrix")
+  if (!taxa_are_rows(ps)) otu_mat <- t(otu_mat)
+  
+  otu_mat_na <- otu_mat[na_taxa, , drop = FALSE]
+  
+  # Prevalence = number of samples where ASV count > 0
+  prevalence <- rowSums(otu_mat_na > 0)
+  
+  # Total read count per ASV across all samples
+  total_reads <- rowSums(otu_mat_na)
+  
+  data.frame(
+    ASV          = na_taxa,
+    prevalence   = prevalence,
+    total_reads  = total_reads,
+    sample_type  = sample_type_label,
+    row.names    = NULL
+  )
+}
+
+# --- Build summaries for biofilm and water ---
+unassigned_st <- get_unassigned_summary(ps_st_collap, "Biofilm")
+unassigned_wf <- get_unassigned_summary(ps_wf_collap, "Water")
+
+unassigned_all <- bind_rows(unassigned_st, unassigned_wf)
+
+cat("\nUnassigned ASV summary (first few rows):\n")
+print(head(unassigned_all))
+
+cat("\nSummary stats per sample type:\n")
+print(unassigned_all %>%
+        group_by(sample_type) %>%
+        summarise(
+          n_asvs        = n(),
+          median_prev   = median(prevalence),
+          median_reads  = median(total_reads),
+          max_reads     = max(total_reads)
+        ))
+
+# --- Plot: Prevalence distribution ---
+p_unassigned_prev <- ggplot(unassigned_all, aes(x = prevalence, fill = sample_type)) +
+  geom_histogram(binwidth = 1, color = "black", alpha = 0.8) +
+  facet_wrap(~ sample_type, scales = "free_y") +
+  labs(
+    title = "Prevalence of unassigned (Division = NA) ASVs",
+    x     = "Number of samples ASV is present in (prevalence)",
+    y     = "Number of ASVs"
+  ) +
+  theme_bw() +
+  theme(
+    strip.text       = element_text(face = "bold"),
+    strip.background = element_rect(fill = "lightgray"),
+    plot.title       = element_text(hjust = 0.5, face = "bold"),
+    legend.position  = "none"
+  )
+print(p_unassigned_prev)
+
+# --- Plot: Read count distribution (log10 scale, since abundance is usually
+# heavily right-skewed — a few ASVs with huge counts, most with very few) ---
+p_unassigned_reads <- ggplot(unassigned_all, aes(x = total_reads, fill = sample_type)) +
+  geom_histogram(bins = 40, color = "black", alpha = 0.8) +
+  scale_x_log10() +
+  facet_wrap(~ sample_type, scales = "free_y") +
+  labs(
+    title = "Total read counts of unassigned (Division = NA) ASVs",
+    x     = "Total reads per ASV (log10 scale)",
+    y     = "Number of ASVs"
+  ) +
+  theme_bw() +
+  theme(
+    strip.text       = element_text(face = "bold"),
+    strip.background = element_rect(fill = "lightgray"),
+    plot.title       = element_text(hjust = 0.5, face = "bold"),
+    legend.position  = "none"
+  )
+print(p_unassigned_reads)
+
+# --- Plot: Prevalence vs. total reads (per ASV, colored by sample type) ---
+# Goal: spot ASVs that are BOTH common (high prevalence) AND abundant (high
+# reads) despite being unassigned at Division level — these are the ones
+# worth a closer look (e.g. BLASTing the sequence, checking reference database)
+
+p_unassigned_scatter <- ggplot(unassigned_all,
+                               aes(x = prevalence, y = total_reads,
+                                   color = sample_type)) +
+  geom_point(alpha = 0.4, size = 2) +
+  scale_y_log10() +
+  facet_wrap(~ sample_type) +
+  labs(
+    title = "Unassigned (Division = NA) ASVs: prevalence vs. abundance",
+    x     = "Prevalence (number of samples present in)",
+    y     = "Total reads per ASV (log10 scale)",
+    color = "Sample type"
+  ) +
+  theme_bw() +
+  theme(
+    plot.title      = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "none"  # no longer needed since panels are already labeled
+  )
+print(p_unassigned_scatter)
+
+
+# ==============================================================================
+# Goal: build the same prevalence/read-count summary for ASSIGNED ASVs
+# (Division NOT NA), then compare against unassigned ASVs in a 2x2 facet grid
+# (rows = assignment status, columns = sample type)
+# ==============================================================================
+
+# --- Helper function: same as before, but for ASSIGNED taxa ---
+get_assigned_summary <- function(ps, sample_type_label) {
+  
+  # Identify ASVs ASSIGNED at Division level (i.e. NOT NA)
+  assigned_taxa <- rownames(tax_table(ps))[!is.na(tax_table(ps)[, "Division"])]
+  
+  if (length(assigned_taxa) == 0) {
+    cat("No assigned-Division ASVs found in", sample_type_label, "\n")
+    return(NULL)
+  }
+  
+  otu_mat <- as(otu_table(ps), "matrix")
+  if (!taxa_are_rows(ps)) otu_mat <- t(otu_mat)
+  
+  otu_mat_assigned <- otu_mat[assigned_taxa, , drop = FALSE]
+  
+  prevalence  <- rowSums(otu_mat_assigned > 0)
+  total_reads <- rowSums(otu_mat_assigned)
+  
+  data.frame(
+    ASV          = assigned_taxa,
+    prevalence   = prevalence,
+    total_reads  = total_reads,
+    sample_type  = sample_type_label,
+    row.names    = NULL
+  )
+}
+
+# --- Build summaries for biofilm and water (assigned ASVs) ---
+assigned_st <- get_assigned_summary(ps_st_collap, "Biofilm")
+assigned_wf <- get_assigned_summary(ps_wf_collap, "Water")
+
+assigned_all <- bind_rows(assigned_st, assigned_wf)
+
+# --- Tag each table with its assignment status, then combine ---
+unassigned_all$assignment_status <- "Unassigned"
+assigned_all$assignment_status   <- "Assigned"
+
+combined_all <- bind_rows(unassigned_all, assigned_all)
+
+# Set factor order so "Assigned" plots on top row, "Unassigned" below
+combined_all$assignment_status <- factor(combined_all$assignment_status,
+                                         levels = c("Assigned", "Unassigned"))
+
+cat("\nCombined summary — ASV counts per group:\n")
+print(table(combined_all$sample_type, combined_all$assignment_status))
+
+# --- 2x2 faceted scatterplot ---
+p_combined_scatter <- ggplot(combined_all,
+                             aes(x = prevalence, y = total_reads,
+                                 color = sample_type)) +
+  geom_point(alpha = 0.4, size = 2) +
+  scale_y_log10() +
+  facet_grid(assignment_status ~ sample_type) +
+  labs(
+    title = "ASV prevalence vs. abundance: assigned vs. unassigned (Division level)",
+    x     = "Prevalence (number of samples present in)",
+    y     = "Total reads per ASV (log10 scale)"
+  ) +
+  theme_bw() +
+  theme(
+    plot.title       = element_text(hjust = 0.5, face = "bold"),
+    strip.text       = element_text(face = "bold"),
+    strip.background = element_rect(fill = "lightgray"),
+    legend.position  = "none"
+  )
+print(p_combined_scatter)
+
 # ------------------------------------------------------------------------------
 # 0.5A: Sample inventory — balanced design check
 # ------------------------------------------------------------------------------

@@ -336,8 +336,8 @@ p_spider2 <- ggplot(pca_data_with_centroids,
   scale_color_manual(values = season_colors) +
   scale_shape_manual(values = substrate_shapes) +
   labs(
-    x     = paste0("PC1 (", var_explained[1], "%)"),
-    y     = paste0("PC2 (", var_explained[2], "%)"),
+    x     = paste0("PC1 (", var_explained[1], "% of explained variance)"),
+    y     = paste0("PC2 (", var_explained[2], "% of explained variance)"),
     color = "Season",
     shape = "Substrate"
   ) +
@@ -351,7 +351,10 @@ p_spider2 <- ggplot(pca_data_with_centroids,
     strip.background  = element_rect(fill = "lightgray"),
     legend.position   = "right",
     legend.box        = "vertical",
-    legend.text = element_text(size = 14),
+    legend.text       = element_text(size = 14),
+    legend.title      = element_text(size = 16, face = "bold"),  # "Season" / "Substrate" headers
+    axis.title        = element_text(size = 16),                 # "PC1 (...)" / "PC2 (...)"
+    axis.text         = element_text(size = 12),                 # the numeric tick labels
     panel.grid.minor  = element_blank(),
     panel.grid.major  = element_blank(),
     panel.background  = element_blank(),
@@ -496,6 +499,8 @@ print(perm_disp_site)
 cat("Average distances to centroid by site:\n")
 print(disp_site$group.distances)
 
+print(table(metadata$site))
+
 cat("\n--- Season ---\n")
 set.seed(123)
 disp_season      <- betadisper(aitchison_dist, metadata$season)
@@ -503,6 +508,8 @@ perm_disp_season <- permutest(disp_season, permutations = 999)
 print(perm_disp_season)
 cat("Average distances to centroid by season:\n")
 print(disp_season$group.distances)
+
+print(table(metadata$season))
 
 cat("\n--- Substrate ---\n")
 set.seed(123)
@@ -512,6 +519,7 @@ print(perm_disp_substrate)
 cat("Average distances to centroid by substrate:\n")
 print(disp_substrate$group.distances)
 
+print(table(metadata$substrate))
 
 # Reporting results in a table
 

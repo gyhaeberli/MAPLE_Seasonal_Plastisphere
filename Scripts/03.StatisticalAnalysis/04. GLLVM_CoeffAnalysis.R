@@ -425,154 +425,125 @@ plastic_response_season <- direction_long %>%
 
 print(plastic_response_season)
 
-
-
 # ==============================================================================
-# PUBLICATION TABLE — LaTeX-style Word export
+# PUBLICATION TABLE — Long format, LaTeX-style Word export
 # ==============================================================================
 
 library(officer)
 library(flextable)
 
-# ── 1. Build the two sections from sig_substrate_table ────────────────────────
+# ── 1. Build long-format table directly from sig_substrate_table ─────────────
 
 substrate_levels <- c("PE", "wPE", "PET", "wPET")
+season_levels    <- c("Winter", "Spring", "Summer", "Fall", "Winter2")
 
-df <- sig_substrate_table %>%
+df_long <- sig_substrate_table %>%
   mutate(
-    substrate = as.character(Substrate),
-    season    = as.character(Season),
-    value     = paste0(season, " (", Prevalence, ")")
+    Substrate = factor(as.character(Substrate), levels = substrate_levels),
+    Season    = factor(as.character(Season),    levels = season_levels)
   ) %>%
-  select(display_label = Taxon, Class, substrate, Direction, value)
+  select(display_label = Taxon, Class, Coefficient = Estimate, SE,
+         Substrate, Season, Prevalence, Direction) %>%
+  arrange(Direction, Class, display_label, Substrate, Season)
 
-make_wide <- function(direction) {
-  df %>%
-    filter(Direction == direction) %>%
-    group_by(display_label, Class, substrate) %>%
-    summarise(value = paste(value, collapse = "; "), .groups = "drop") %>%
-    mutate(substrate = factor(substrate, levels = substrate_levels)) %>%
-    pivot_wider(
-      names_from   = substrate,
-      values_from  = value,
-      values_fill  = "—",
-      names_expand = TRUE
-    ) %>%
-    arrange(Class, display_label)
+higher_long <- df_long %>% filter(Direction == "higher") %>% select(-Direction)
+lower_long  <- df_long %>% filter(Direction == "lower")  %>% select(-Direction)
+
+# ── 2. Insert section-label rows (all columns blank except Taxon) ────────────
+
+make_section_row <- function(label, template_df) {
+  row <- as.list(rep(NA_character_, ncol(template_df)))
+  names(row) <- names(template_df)
+  row$display_label <- label
+  as_tibble(row) %>%
+    mutate(across(c(Coefficient, SE), as.numeric))
 }
 
-higher_wide <- make_wide("higher")
-lower_wide  <- make_wide("lower")
+higher_header <- make_section_row("Higher occurrence probability on plastics than glass", higher_long)
+lower_header  <- make_section_row("Lower occurrence probability on plastics than glass",  lower_long)
 
-# ── 2. Tag rows with section, then bind ───────────────────────────────────────
+combined <- bind_rows(higher_header, higher_long, lower_header, lower_long)
 
-higher_wide$section <- "Elevated on plastic"
-lower_wide$section  <- "Reduced on plastic"
-
-combined <- bind_rows(higher_wide, lower_wide)
-
-# Row indices for each section (used for border placement)
-n_higher   <- nrow(higher_wide)
-n_lower    <- nrow(lower_wide)
-last_row   <- nrow(combined)
+# Row indices needed for styling
+higher_header_row <- 1
+higher_rows        <- seq(2, 1 + nrow(higher_long))
+lower_header_row   <- 2 + nrow(higher_long)
+lower_rows         <- seq(lower_header_row + 1, nrow(combined))
+last_row           <- nrow(combined)
 
 # ── 3. Define borders ─────────────────────────────────────────────────────────
 
 thin_rule  <- fp_border(color = "#444444", width = 0.75)
 thick_rule <- fp_border(color = "#000000", width = 2.5)
-no_border  <- fp_border(width = 0)
 
-# ── 4. Build flextable (section column used only for grouping, then hidden) ───
+# ── 4. Build flextable ─────────────────────────────────────────────────────────
 
-ft <- flextable(combined %>% select(-section)) %>%
-  
-  # Column labels
+ft <- flextable(combined) %>%
   set_header_labels(
     display_label = "Taxon",
     Class         = "Class",
-    PE            = "PE",
-    wPE           = "wPE",
-    PET           = "PET",
-    wPET          = "wPET"
+    Coefficient   = "Coefficient",
+    SE            = "SE",
+    Substrate     = "Polymer",
+    Season        = "Season",
+    Prevalence    = "Prevalence (plastic vs glass)"
   ) %>%
   
-  # ── Section header rows ────────────────────────────────────────────────────
-  # Prepend a merged label row for each section using add_header_row is not
-  # ideal here; instead we style row 1 and row (n_higher+1) as section banners
-  # by inserting blank rows above them via compose().
-  # Simpler and more robust: use bg + bold on the first row of each group,
-  # merged across all columns with a labelless style.
+  # Merge section-label rows across all columns
+  merge_h(i = higher_header_row, part = "body") %>%
+  merge_h(i = lower_header_row,  part = "body") %>%
   
-  # Section banners: row 1 = "Elevated", row n_higher+1 = "Reduced"
-  # We inject these as real data rows so merge works cleanly.
-  
-  # ── Typography ────────────────────────────────────────────────────────────
+  # Typography
   font(fontname = "Arial", part = "all") %>%
   fontsize(size = 9,  part = "body") %>%
   fontsize(size = 10, part = "header") %>%
   italic(j = "display_label", part = "body") %>%
   bold(part = "header") %>%
   
-  # ── Column widths (inches) — landscape A4 content width ~10.1 in ─────────────
-  width(j = "display_label",                width = 2.2) %>%
-  width(j = "Class",                        width = 1.4) %>%
-  width(j = c("PE", "wPE", "PET", "wPET"), width = 1.6) %>%
+  colformat_double(j = c("Coefficient", "SE"), digits = 3, na_str = "") %>%
   
-  # ── Outer frame: thin top, thin bottom ───────────────────────────────────
+  # Column widths (inches)
+  width(j = "display_label", width = 1.8) %>%
+  width(j = "Class",         width = 1.3) %>%
+  width(j = "Coefficient",   width = 0.9) %>%
+  width(j = "SE",            width = 0.7) %>%
+  width(j = "Substrate",     width = 0.8) %>%
+  width(j = "Season",        width = 0.9) %>%
+  width(j = "Prevalence",    width = 1.7) %>%
+  
+  # Borders
+  border_remove() %>%
   hline_top(part = "header", border = thin_rule) %>%
   hline_top(part = "body",   border = thin_rule) %>%
   hline(i = last_row, part = "body", border = thin_rule) %>%
+  hline(i = higher_header_row, part = "body", border = thick_rule) %>%
+  hline(i = lower_header_row - 1, part = "body", border = thick_rule) %>%
+  hline(i = lower_header_row, part = "body", border = thick_rule) %>%
   
-  # ── Inner body lines: no horizontal rules except the section divider ──────
-  border_remove() %>%                             # wipe all inner borders first
-  hline_top(part = "header", border = thin_rule) %>%  # restore outer frame
-  hline_top(part = "body",   border = thin_rule) %>%
-  hline(i = last_row, part = "body", border = thin_rule) %>%
-  
-  # ── Section divider: thick double-hline after last higher row ─────────────
-  hline(i = n_higher, part = "body", border = thick_rule) %>%
-  
-  # ── Vertical lines: none (LaTeX booktabs style) ───────────────────────────
-  
-  # ── Row backgrounds: plain white throughout ───────────────────────────────
   bg(bg = "white", part = "all") %>%
+  bg(i = c(higher_header_row, lower_header_row), bg = "#D9D9D9", part = "body") %>%
+  bold(i = c(higher_header_row, lower_header_row), part = "body") %>%
+  italic(i = c(higher_header_row, lower_header_row), j = "display_label",
+         italic = FALSE, part = "body") %>%
   
-  # ── Alignment ─────────────────────────────────────────────────────────────
-  align(j = c("PE", "wPE", "PET", "wPET"), align = "left",   part = "body") %>%
-  align(j = c("display_label", "Class"),   align = "left",   part = "body") %>%
-  align(part = "header",                   align = "center") %>%
+  align(j = c("Coefficient", "SE", "Substrate", "Season", "Prevalence"),
+        align = "left", part = "body") %>%
+  align(j = c("display_label", "Class"), align = "left", part = "body") %>%
+  align(part = "header", align = "center") %>%
   
-  # ── Wrap & layout ─────────────────────────────────────────────────────────
   set_table_properties(layout = "fixed") %>%
-  valign(valign = "top", part = "body") %>%
-  
-  # ── Section label: bold italic in first column of each section ────────────
-  bold(i  = seq_len(n_higher),              j = "display_label", part = "body") %>%
-  italic(i = seq_len(n_higher),             j = "display_label", part = "body") %>%
-  bold(i  = seq(n_higher + 1, last_row),    j = "display_label", part = "body") %>%
-  italic(i = seq(n_higher + 1, last_row),   j = "display_label", part = "body")
+  valign(valign = "top", part = "body")
 
-# ── 5. Add section label annotations above each block via a header footnote ──
-# The cleanest LaTeX-equivalent in Word is a bold paragraph before the table.
+# ── 5. Write to Word (no title, no caption) ───────────────────────────────────
 
-# ── 6. Write to Word ──────────────────────────────────────────────────────────
-out_path <- file.path(TABLE_DIR, "publication_table.docx")
+out_path <- file.path(TABLE_DIR, "publication_table_long.docx")
 
 read_docx() %>%
-  body_add_par("Table X. Reliable plastic vs glass contrasts", style = "heading 1") %>%
-  body_add_par(
-    paste0("Each cell lists Season (k_plastic/n_plastic vs k_glass/n_glass biological samples). ",
-           "Top section: taxa with significantly higher occurrence on plastic. ",
-           "Bottom section: taxa with significantly lower occurrence on plastic. ",
-           "Thick rule separates sections. Corrected p < 0.05 (BH)."),
-    style = "Normal"
-  ) %>%
-  body_add_par("Elevated on plastic", style = "Normal") %>%
   body_add_flextable(ft) %>%
-  body_end_section_landscape() %>%    # <-- sets this section to landscape
+  body_end_section_landscape() %>%
   print(target = out_path)
-cat("Publication table saved to:", out_path, "\n")
 
+cat("Long-format publication table saved to:", out_path, "\n")
 
 
 # ==============================================================================
