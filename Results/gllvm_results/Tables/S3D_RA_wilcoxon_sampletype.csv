@@ -1,0 +1,3 @@
+"taxon_group","n_water","n_biofilm","median_water","median_biofilm","wilcox_p","wilcox_p_adj","significant"
+"Syndiniales",59,148,3.7735660198888,0.089849514488743,2.22044604925031e-16,0,TRUE
+"Bacillariophyceae",59,148,0.125811306556298,7.81075322803293,2.11362795412416e-11,0,TRUE

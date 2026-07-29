@@ -67,6 +67,43 @@ stopifnot(!is.null(best_model), !is.null(null_model))
 cat("Models loaded successfully.\n\n")
 
 
+# ==============================================================================
+#  CHECK FOR RESIDUAL STRUCTURE
+#
+# The latent variables (LVs) in the GLLVM represent the sample-level
+# variation NOT explained by the fixed effects (site, season, substrate).
+# This is conceptually equivalent to a PCA on model residuals.
+#
+# If the fixed effects have captured the structure associated with these
+# design factors, samples should NOT cluster by site/season/substrate in
+# this ordination. Visible clustering here would suggest the fixed effects
+# have not fully absorbed that structure.
+# ==============================================================================
+
+
+# Extract per-sample LV scores (matrix: samples x num.lv)
+lv_scores <- getLV(best_model)
+colnames(lv_scores) <- paste0("LV", seq_len(ncol(lv_scores)))
+
+# Combine with metadata — must be in the same sample order as the model
+stopifnot(nrow(lv_scores) == nrow(metadata))
+lv_df <- data.frame(lv_scores, metadata)
+
+# ── Plot 1: coloured by season, shaped by site ────────────────────────────────
+p_lv_season <- ggplot(lv_df, aes(x = LV1, y = LV2, colour = season, shape = site)) +
+  geom_point(size = 2.5, alpha = 0.8) +
+  stat_ellipse(aes(group = season), linewidth = 0.4, alpha = 0.5) +
+  coord_equal() +
+  labs(x = "Latent variable 1", y = "Latent variable 2",
+       title = "Residual (LV) ordination by season and site") +
+  theme_bw(base_size = 11)
+
+print(p_lv_season)
+ggsave(file.path(FIG_DIR, "S3A_LV_ordination_season_site.png"),
+       p_lv_season, width = 7, height = 6, dpi = 200)
+
+
+
 ################################################################################
 # Pipeline:
 #   3-A  Pollock decomposition — env vs residual correlation per OTU pair
@@ -2589,5 +2626,219 @@ ggsave(
   p_ra_sub, width = 8, height = 5, dpi = 200
 )
 cat("Figure 3 saved: S3D_ra_substrate_bar.png\n\n")
+
+
+# ==============================================================================
+# SIGNIFICANCE TESTING: RA DIFFERENCES ACROSS SAMPLE TYPE AND SUBSTRATE
+#
+# RA is proportion data, typically non-normal (skewed, bounded at 0), so we
+# use non-parametric tests rather than t-tests/ANOVA:
+#   - Wilcoxon rank-sum test: Water vs Biofilm (2 groups)
+#   - Kruskal-Wallis test: across substrate levels (>2 groups), followed by
+#     Dunn's post-hoc test with FDR correction for pairwise comparisons
+#
+# Run separately per taxon (Syndiniales, Bacillariophyceae) since they may
+# respond differently to substrate/habitat.
+# ==============================================================================
+
+library(dunn.test)   # for Dunn's post-hoc test
+
+cat("=== SIGNIFICANCE TESTS: RA BY SAMPLE TYPE ===\n\n")
+
+# ── Wilcoxon test: Water vs Biofilm, per taxon ─────────────────────────────────
+
+wilcox_results <- ra_all %>%
+  filter(!is.na(ra_pct)) %>%
+  group_by(taxon_group) %>%
+  summarise(
+    n_water   = sum(sample_type == "Water"),
+    n_biofilm = sum(sample_type == "Biofilm"),
+    median_water   = median(ra_pct[sample_type == "Water"]),
+    median_biofilm = median(ra_pct[sample_type == "Biofilm"]),
+    wilcox_p = wilcox.test(ra_pct ~ sample_type)$p.value,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    wilcox_p_adj = round(p.adjust(wilcox_p, method = "fdr"), 4),
+    significant  = wilcox_p_adj < 0.05
+  )
+
+cat("Wilcoxon test (Water vs Biofilm) per taxon:\n")
+print(wilcox_results)
+cat("\n")
+
+write.csv(wilcox_results,
+          file.path(TABLE_DIR, "S3D_RA_wilcoxon_sampletype.csv"),
+          row.names = FALSE)
+
+
+cat("=== SIGNIFICANCE TESTS: RA BY SUBSTRATE ===\n\n")
+
+# ── Kruskal-Wallis test: across substrate levels, per taxon ───────────────────
+
+kw_results <- ra_all %>%
+  filter(!is.na(ra_pct), !is.na(substrate)) %>%
+  group_by(taxon_group) %>%
+  summarise(
+    kw_stat = kruskal.test(ra_pct ~ substrate)$statistic,
+    kw_df   = kruskal.test(ra_pct ~ substrate)$parameter,
+    kw_p    = kruskal.test(ra_pct ~ substrate)$p.value,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    kw_p_adj    = round(p.adjust(kw_p, method = "fdr"), 4),
+    significant = kw_p_adj < 0.05
+  )
+
+cat("Kruskal-Wallis test (across substrates) per taxon:\n")
+print(kw_results)
+cat("\n")
+
+write.csv(kw_results,
+          file.path(TABLE_DIR, "S3D_RA_kruskalwallis_substrate.csv"),
+          row.names = FALSE)
+
+# ── Dunn's post-hoc test — only meaningful where Kruskal-Wallis is significant
+
+cat("--- Dunn's post-hoc pairwise comparisons (substrate) ---\n\n")
+
+dunn_all <- lapply(taxon_levels, function(tx) {
+  
+  df_tx <- ra_all %>% filter(taxon_group == tx, !is.na(ra_pct), !is.na(substrate))
+  
+  dt <- dunn.test(
+    x        = df_tx$ra_pct,
+    g        = df_tx$substrate,
+    method   = "bh",     # multiple-testing correction
+    kw       = TRUE,
+    table    = FALSE
+  )
+  
+  data.frame(
+    taxon_group = tx,
+    comparison  = dt$comparisons,
+    Z           = round(dt$Z, 3),
+    p_adj       = round(dt$P.adjusted, 4),
+    significant = dt$P.adjusted < 0.05
+  )
+})
+
+dunn_df <- bind_rows(dunn_all)
+
+cat("Significant pairwise substrate comparisons (p_adj < 0.05):\n")
+print(dunn_df %>% filter(significant))
+cat("\n")
+
+write.csv(dunn_df,
+          file.path(TABLE_DIR, "S3D_RA_dunn_posthoc_substrate.csv"),
+          row.names = FALSE)
+
+cat("=== SIGNIFICANCE TESTING COMPLETE ===\n\n")
+
+## add to plot
+
+library(ggsignif)
+
+# ── Prepare significance brackets from your existing Dunn's results ───────────
+# We only draw brackets for Filter vs each substrate, since those were the
+# comparisons that were significant. Position is faceted by taxon_group.
+
+sig_brackets <- dunn_df %>%
+  filter(significant, grepl("Filter", comparison)) %>%
+  mutate(
+    # comparison looks like "Filter - Glass" — split into the two substrate names
+    group1 = trimws(sub(" - .*", "", comparison)),
+    group2 = trimws(sub(".* - ", "", comparison)),
+    label  = case_when(
+      p_adj < 0.001 ~ "***",
+      p_adj < 0.01  ~ "**",
+      p_adj < 0.05  ~ "*",
+      TRUE          ~ "ns"
+    )
+  ) %>%
+  select(taxon_group, group1, group2, p_adj, label)
+
+cat("Significance brackets to plot:\n")
+print(sig_brackets)
+
+# ── Compute bracket y-positions per taxon (staggered above the tallest bar) ───
+# geom_signif needs y_position per bracket; we stagger them upward so
+# brackets don't overlap when several substrates are compared to Filter.
+
+max_y_by_taxon <- substrate_summary %>%
+  group_by(taxon_group) %>%
+  summarise(max_y = max(mean_ra + se_ra, na.rm = TRUE), .groups = "drop")
+
+sig_brackets <- sig_brackets %>%
+  left_join(max_y_by_taxon, by = "taxon_group") %>%
+  group_by(taxon_group) %>%
+  mutate(y_position = max_y * (1.08 + 0.12 * (row_number() - 1))) %>%
+  ungroup()
+
+# ── Barplot with significance brackets, faceted by taxon ──────────────────────
+
+p_ra_sub_sig <- ggplot(
+  substrate_summary,
+  aes(x = substrate, y = mean_ra, fill = taxon_group)
+) +
+  geom_col(
+    position = position_dodge(width = 0.75),
+    width    = 0.65,
+    alpha    = 0.85
+  ) +
+  geom_errorbar(
+    aes(ymin = pmax(mean_ra - se_ra, 0),
+        ymax = mean_ra + se_ra),
+    position  = position_dodge(width = 0.75),
+    width     = 0.25,
+    colour    = "grey30",
+    linewidth = 0.5
+  ) +
+  facet_wrap(~ taxon_group, scales = "free_y", ncol = 1) +
+  geom_signif(
+    data            = sig_brackets,
+    aes(xmin = group1, xmax = group2, y_position = y_position,
+        annotations = label),
+    manual          = TRUE,
+    inherit.aes     = FALSE,
+    tip_length      = 0.01,
+    textsize        = 4
+  ) +
+  scale_fill_manual(values = taxon_cols, name = NULL) +
+  scale_x_discrete(labels = c(
+    "Filter"        = "Seawater",
+    "Glass"         = "Glass",
+    "PE"            = "PE",
+    "Weathered_PE"  = "Weathered\nPE",
+    "PET"           = "PET",
+    "Weathered_PET" = "Weathered\nPET"
+  )) +
+  scale_y_continuous(labels = function(x) paste0(x, "%"),
+                     expand = expansion(mult = c(0.02, 0.15))) +
+  labs(
+    x = NULL,
+    y = "Mean relative read abundance",
+    caption = "Brackets: Dunn's post-hoc test (FDR-corrected) vs seawater. * p<0.05, ** p<0.01, *** p<0.001"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    strip.text          = element_text(size = 12, face = "bold.italic"),
+    strip.background    = element_rect(fill = "grey92", colour = NA),
+    axis.title.y        = element_text(size = 13, face = "bold"),
+    axis.text.x         = element_text(size = 11, face = "bold"),
+    axis.text.y         = element_text(size = 11, face = "bold"),
+    axis.line           = element_line(linewidth = 0.7, colour = "black"),
+    panel.grid.major.y  = element_line(colour = "grey90", linewidth = 0.4),
+    legend.position      = "none",
+    plot.caption         = element_text(size = 9, colour = "grey40"),
+    plot.margin          = margin(5, 10, 5, 5)
+  )
+
+print(p_ra_sub_sig)
+ggsave(
+  file.path(FIG_DIR, "S3D_ra_substrate_bar_significance.png"),
+  p_ra_sub_sig, width = 8, height = 9, dpi = 200
+)
+cat("Figure saved: S3D_ra_substrate_bar_significance.png\n\n")
 
 cat("=== RELATIVE ABUNDANCE SUPPLEMENT COMPLETE ===\n\n")
