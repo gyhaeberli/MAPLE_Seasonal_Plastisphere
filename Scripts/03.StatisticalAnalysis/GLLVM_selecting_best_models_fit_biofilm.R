@@ -739,6 +739,123 @@ fit_gllvm_arm(data_biofilm_v2, mats_biofilm_v2$prop, "betaH", "EVA",
 
 
 
+## Load to run diagnostics
+
+library(gllvm)
+
+base_dir <- "~/GitHub/MAPLE_18S/Processed_data/gllvm_models"
+base_dir <- "/home/ahomew/g/gabrihae/data/glennsdata/MAPLE/18S/STATISTICS/GLLVM/models_v2"
+
+# NB — M2, lv2
+nb_fouling_m2 <- readRDS(file.path(base_dir, "gllvm_NB_v2",
+                                   "M2_all2way_NB_fouling_lv2.rds"))
+nb_biofilm_m2 <- readRDS(file.path(base_dir, "gllvm_NB_v2",
+                                   "M2_all2way_NB_biofilm_lv2.rds"))
+
+# PA — M2, lv2
+pa_fouling_m2 <- readRDS(file.path(base_dir, "gllvm_PA_v2",
+                                   "M2_all2way_PA_fouling_lv2.rds"))
+pa_biofilm_m2 <- readRDS(file.path(base_dir, "gllvm_PA_v2",
+                                   "M2_all2way_PA_biofilm_lv2.rds"))
+
+# ZINB — M2, lv2
+zinb_fouling_m2 <- readRDS(file.path(base_dir, "gllvm_ZINB_v2",
+                                     "M2_all2way_ZINB_fouling_lv2.rds"))
+zinb_biofilm_m2 <- readRDS(file.path(base_dir, "gllvm_ZINB_v2",
+                                     "M2_all2way_ZINB_biofilm_lv2.rds"))
+
+
+## Residual plots
+
+
+# NB — both panels in one call, side by side
+png("diagnostics_NB_M2_fouling_lv2.png", width = 10, height = 5, units = "in", res = 300)
+par(mfrow = c(1, 2))
+plot(nb_fouling_m2, which = 1:2, var.colors = 1)
+dev.off()
+
+# PA — both panels in one call, side by side
+png("diagnostics_PA_M2_fouling_lv2.png", width = 10, height = 5, units = "in", res = 300)
+par(mfrow = c(1, 2))
+plot(pa_fouling_m2, which = 1:2, var.colors = 1)
+dev.off()
+
+png("diagnostics_ZINB_M2_fouling_lv2.png", width = 10, height = 5, units = "in", res = 300)
+par(mfrow = c(1, 2))
+plot(zinb_fouling_m2, which = 1:2, var.colors = 1)
+dev.off()
+
+
+## Residual summary tables
+resid_nb <- residuals(nb_fouling_m2)$resid
+resid_pa <- residuals(pa_fouling_m2)$resid
+resid_zinb <- residuals(zinb_fouling_m2)$resid
+
+residual_summary <- data.frame(
+  model = c("NB", "PA", "ZINB"),
+  mean_abs_resid = c(mean(abs(resid_nb), na.rm = TRUE),
+                     mean(abs(resid_pa), na.rm = TRUE),
+                     mean(abs(resid_zinb), na.rm = TRUE)),
+  sd_resid = c(sd(resid_nb, na.rm = TRUE),
+               sd(resid_pa, na.rm = TRUE),
+               sd(resid_zinb, na.rm = TRUE))
+)
+write.csv(residual_summary, "residual_summary_NB_vs_PA_vs_ZINB_M2_fouling_lv2.csv",
+          row.names = FALSE)
+cat("Saved: residual_summary_NB_vs_PA_vs_ZINB_M2_fouling_lv2.csv\n")
+print(residual_summary)
+
+
+## coefficient screening
+screen_coefficients <- function(fit, se_thresh = 1e-3, mag_bound = 30, alpha = 0.05) {
+  
+  sm <- summary(fit)
+  tab <- as.data.frame(sm$Coef.tableX)
+  colnames(tab) <- c("estimate", "se", "z", "p_raw")
+  
+  row_ids <- rownames(tab)
+  tab$term  <- sub(":[^:]+$", "", row_ids)
+  tab$taxon <- sub("^.*:", "", row_ids)
+  
+  tab$separation_flag <- tab$se < se_thresh
+  tab$magnitude_flag  <- abs(tab$estimate) > mag_bound
+  tab$excluded        <- tab$separation_flag | tab$magnitude_flag
+  
+  clean_df <- tab[!tab$excluded, ]
+  clean_df$p_BH <- p.adjust(clean_df$p_raw, method = "BH")
+  clean_df$significant <- clean_df$p_BH < alpha
+  
+  list(
+    full       = tab,
+    retained   = clean_df[clean_df$significant, ],
+    n_total    = nrow(tab),
+    n_excluded = sum(tab$excluded),
+    n_retained = sum(clean_df$significant, na.rm = TRUE)
+  )
+}
+
+nb_screen   <- screen_coefficients(nb_fouling_m2)
+pa_screen   <- screen_coefficients(pa_fouling_m2)
+zinb_screen <- screen_coefficients(zinb_fouling_m2)
+
+#full comparison table
+comparison <- data.frame(
+  model                 = c("NB", "PA", "ZINB"),
+  total_coefs           = c(nb_screen$n_total, pa_screen$n_total, zinb_screen$n_total),
+  excluded_spurious     = c(nb_screen$n_excluded, pa_screen$n_excluded, zinb_screen$n_excluded),
+  pct_excluded          = round(100 * c(nb_screen$n_excluded / nb_screen$n_total,
+                                        pa_screen$n_excluded / pa_screen$n_total,
+                                        zinb_screen$n_excluded / zinb_screen$n_total), 1),
+  retained_significant  = c(nb_screen$n_retained, pa_screen$n_retained, zinb_screen$n_retained)
+)
+
+write.csv(comparison, "coefficient_comparison_NB_vs_PA_vs_ZINB_M2_fouling_lv2.csv", row.names = FALSE)
+write.csv(nb_screen$full,   "coefficients_full_NB_M2_fouling_lv2.csv",   row.names = FALSE)
+write.csv(pa_screen$full,   "coefficients_full_PA_M2_fouling_lv2.csv",   row.names = FALSE)
+write.csv(zinb_screen$full, "coefficients_full_ZINB_M2_fouling_lv2.csv", row.names = FALSE)
+print(comparison)
+
+
 
 
 
